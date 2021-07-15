@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, "/>
 <meta name="description" content="An organization chart editor with assistants shown on the side -- edit details and change relationships."/> 
 <link rel="stylesheet" href="./style.css"/> 
 <!-- Copyright 1998-2021 by Northwoods Software Corporation. -->
@@ -12,7 +12,7 @@
 <body>
   <!-- This top nav is not part of the sample code -->
   <div class="md:flex flex-col md:flex-row md:min-h-screen w-full max-w-screen-xl mx-auto">
-    <div id="navSide" class="flex flex-col w-full md:w-48 text-gray-700 bg-white flex-shrink-0"></div>
+    <!-- <div id="navSide" class="flex flex-col w-full md:w-48 text-gray-700 bg-white flex-shrink-0"></div> -->
     <!-- * * * * * * * * * * * * * -->
     <!-- Start of GoJS sample code -->
     
@@ -28,8 +28,21 @@
 
       myDiagram =
         $(go.Diagram, "myDiagramDiv", // must be the ID or reference to div
+        
           {
+            initialContentAlignment: go.Spot.Center,
+            // initialScale: (pageBodyWidth > 500 ? 1 : 0.6),
+            contentAlignment: go.Spot.Center,
+            layout: $(go.LayeredDigraphLayout, { direction: 0 }),
+            isReadOnly: false,
+            allowLink: true,
+            allowClipboard: false,
+            'animationManager.duration': 200,
+            'undoManager.isEnabled': false,
+             allowHorizontalScroll: false,
+             allowVerticalScroll: false,
             initialAutoScale: go.Diagram.Uniform,
+            // initialViewportSpot: go.Spot.(300,500),
             maxSelectionCount: 1, // users can select only one part at a time
             validCycle: go.Diagram.CycleDestinationTree, // make sure users can only create trees
             "clickCreatingTool.archetypeNodeData": { // allow double-click in background to create a new node
@@ -62,19 +75,8 @@
                 }),
             "undoManager.isEnabled": true // enable undo & redo
           });
-
+          // myDiagram.isEnabled = false;
       // when the document is modified, add a "*" to the title and enable the "Save" button
-      myDiagram.addDiagramListener("Modified", function(e) {
-        var button = document.getElementById("SaveButton");
-        if (button) button.disabled = !myDiagram.isModified;
-        var idx = document.title.indexOf("*");
-        if (myDiagram.isModified) {
-          if (idx < 0) document.title += "*";
-        } else {
-          if (idx >= 0) document.title = document.title.substr(0, idx);
-        }
-      });
-
       // manage boss info manually when a node or link is deleted from the diagram
       myDiagram.addDiagramListener("SelectionDeleting", function(e) {
         var part = e.subject.first(); // e.subject is the myDiagram.selection collection,
@@ -97,7 +99,7 @@
         myDiagram.commitTransaction("clear boss");
       });
 
-      var levelColors = ["#AC193D", "#2672EC", "#8C0095", "#5133AB",
+      var levelColors = ["white", "white", "white", "#5133AB",
         "#008299", "#D24726", "#008A00", "#094AB2"];
 
       // override TreeLayout.commitNodes to also modify the background brush based on the tree depth level
@@ -160,46 +162,65 @@
           // bind the Part.layerName to control the Node's layer depending on whether it isSelected
           new go.Binding("layerName", "isSelected", function(sel) { return sel ? "Foreground" : ""; }).ofObject(),
           // define the node's outer shape
-          $(go.Shape, "Rectangle",
+          $(go.Shape, "RoundedRectangle",
             { name:"SHAPE",
-               fill: "white", 
+               fill: null,
+               stroke:"#3e0d1e",
+               strokeWidth:"2", 
               // set the port properties:
               portId: "", fromLinkable: true, toLinkable: true, cursor: "pointer",
               
             }),
 
-            { mouseEnter: function(e, obj, prev) {  // change group's background brush
-              var shape = obj.part.findObject("SHAPE");
+            { mouseEnter: function(e, node, prev) {  // change group's background brush
+              var shape = node.part.findObject("SHAPE");
               shape._prevFill=shape.fill;
-              if (shape) shape.fill = "#4a0f6c";
-              
+              if (shape) shape.fill = "#3e0d1e";
+              var text = node.findObject("NAMETB");
+              text._prevStroke=text.stroke;
+              text.stroke = "white";
+              var text = node.findObject("title");
+              text._prevStroke=text.stroke;
+              text.stroke = "white";
+              var text = node.findObject("content");
+              text._prevStroke=text.stroke;
+              text.stroke = "white";
               },
-              mouseLeave: function(e, obj, next) {  // restore to original brush
-              var shape = obj.part.findObject("SHAPE");
+              mouseLeave: function(e, node, next) {  // restore to original brush
+              var shape = node.part.findObject("SHAPE");
               if (shape) shape.fill = shape._prevFill;
+              var text = node.findObject("NAMETB");
+              text.stroke=text._prevStroke;
+              var text = node.findObject("title");
+              text.stroke=text._prevStroke;
+              var text = node.findObject("content");
+              text.stroke=text._prevStroke;
+
               } 
             },
           $(go.Panel, "Horizontal",
           // $(go.Shape, "Ellipse",{width: 40, height: 50, margin: 4,}
           // ),
+          $(go.Panel,"Spot",
+          $(go.Shape, "Circle", { width: 60, strokeWidth: 0, fill: '#3e0d1e' } ),
             $(go.Panel,"Spot",
-               { isClipping: true},
-               $(go.Shape, "Circle", { width: 55, strokeWidth: 0 } ),
+               { isClipping: true,margin: new go.Margin(5, 5, 5, 5),},
+               $(go.Shape, "Circle", { width: 55, strokeWidth: 0,} ),
                 $(go.Picture,
                 {
                   name: "Picture",
-                  width: 55, height: 55 
+                  width: 55, height: 55
                 },
               new go.Binding("source", "key", findHeadShot)),
               
-            ),
+            ),),
            
         
             // define the panel where the text will appear
             $(go.Panel, "Table",
               {
                 maxSize: new go.Size(150, 999),
-                margin: new go.Margin(6, 10, 0, 3),
+                margin: new go.Margin(0, 4, 0, 0),
                 defaultAlignment: go.Spot.Left,
                
               },
@@ -210,34 +231,24 @@
                   row: 0, column: 0, columnSpan: 5,
                   font: "12pt Segoe UI,sans-serif",
                   editable: true, isMultiline: false,
-                  minSize: new go.Size(10, 16)
+                  minSize: new go.Size(20, 16),
+                  stroke:"#3e0d1e",
                 },
                 new go.Binding("text", "name").makeTwoWay()),
+                   
               $(go.TextBlock, "Title: ", textStyle(),
-                { row: 1, column: 0 }),
+                { name:"title",
+                  row: 1, column: 0 ,stroke:"#3e0d1e"}),
               $(go.TextBlock, textStyle(),
                 {
+                  name:"content",
                   row: 1, column: 1, columnSpan: 4,
                   editable: true, isMultiline: false,
                   minSize: new go.Size(10, 14),
-                  margin: new go.Margin(0, 0, 0, 3)
+                  margin: new go.Margin(0, 0, 0, 3),
+                  stroke:"#3e0d1e"
                 },
                 new go.Binding("text", "title").makeTwoWay()),
-              $(go.TextBlock, textStyle(),
-                { row: 2, column: 0 },
-                new go.Binding("text", "key", function(v) { return "ID: " + v; })),
-              $(go.TextBlock, textStyle(),
-                { name: "boss", row: 2, column: 3, }, // we include a name so we can access this TextBlock when deleting Nodes/Links
-                new go.Binding("text", "parent", function(v) { return "Boss: " + v; })),
-              $(go.TextBlock, textStyle(),  // the comments
-                {
-                  row: 3, column: 0, columnSpan: 5,
-                  font: "italic 9pt sans-serif",
-                  wrap: go.TextBlock.WrapFit,
-                  editable: true,  // by default newlines are allowed
-                  minSize: new go.Size(10, 14)
-                },
-                new go.Binding("text", "comments").makeTwoWay())
             )  // end Table Panel
           ) // end Horizontal Panel
         );  // end Node
@@ -247,7 +258,7 @@
       myDiagram.linkTemplate =
         $(go.Link, go.Link.Orthogonal,
           { corner: 5, relinkableFrom: true, relinkableTo: true },
-          $(go.Shape, { strokeWidth: 4, stroke: "#4a0f6c" }));  // the link shape
+          $(go.Shape, { strokeWidth: 4, stroke: "#3e0d1e" }));  // the link shape
 
       // read in the JSON-format data from the "mySavedModel" element
       load();
@@ -415,15 +426,15 @@
       // make sure new data keys are unique positive integers
       var $ = go.GraphObject.make;
       var nodeDataArray = [
-        {"key":1, "name":"Xavier Breath", "title":"Engineering", },
-        {"key":2, "name":"Billy Aiken", "title":"Software", "parent":1},
-        {"key":3, "name":"Stan Wellback", "title":"Testing", "parent":1},
-        {"key":4, "name":"Marge Innovera", "title":"Hardware", "parent":1},
-        {"key":5, "name":"Marge Innovera", "title":"Hardware", "parent":1},
-        {"key":8, "name":"Marge Innovera", "title":"Hardware", "parent":1},
-        {"key":9, "name":"Marge Innovera", "title":"Hardware", "parent":1},
-        {"key":6, "name":"Hannah Twomey", "title":"Engineering Assistant", "parent":1, "isAssistant":true},
-        {"key":7, "name":"Hannah Twomey", "title":"Engineering Assistant", "parent":1, "isAssistant":true}
+        {"key":1, "name":"Xavier ", "title":"Engineering", },
+        {"key":2, "name":"Billy ", "title":"Software", "parent":1},
+        {"key":3, "name":"Stan", "title":"Testing", "parent":1},
+        {"key":4, "name":"Marge", "title":"Hardware", "parent":1},
+        {"key":5, "name":"Marge", "title":"Hardware", "parent":1},
+        {"key":8, "name":"Marge", "title":"Hardware", "parent":1},
+        {"key":9, "name":"Marge", "title":"Hardware", "parent":1},
+        {"key":6, "name":"Hannah", "title":"Engineering ", "parent":1, "isAssistant":true},
+        {"key":7, "name":"Hannah", "title":"Engineering ", "parent":1, "isAssistant":true}
 
       ];
 
@@ -443,9 +454,9 @@
     window.addEventListener('DOMContentLoaded', init);
   </script>
 
-<div id="sample">
-  <div id="myDiagramDiv" style="background-color: #696969; border: solid 1px black; height: 500px;"></div>
-
+<div  >
+  <div id="myDiagramDiv" style="background-color:white; height:800px;"></div>
+  <div class="back" style="background-color: white; left:16px;right:16px;margin:auto;height: 100px;position: absolute;top:16px ; z-index:5 ;"></div>
   <div>
   </div>
 </div>
